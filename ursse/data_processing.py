@@ -4,7 +4,7 @@ def get_event_delays(f):
     """caclulates delays of detection events with respect to iota clock events
     f : instance of HydraHarpFile
     returns a pandas series"""
-    # find first index where it's an iota clock event
+    # find first index where it's an iota clock event (most likely first)
     idx0 = 0
     while True:
         if f.TimeTags.iloc[idx0,0]==0:
