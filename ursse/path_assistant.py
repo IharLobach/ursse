@@ -11,43 +11,50 @@ def show_shift_folders():
         print(i, f)
 
 
-def get_shift_path(shift_folder_name):
-    return os.path.join(shifts_folder, shift_folder_name,
-                        "time_stamp_files")
-
-
-def get_shift_cache_folder_path(shift_folder_name):
-    return os.path.join(get_shift_path(shift_folder_name), "cache")
-    
-
-def get_shift_files(shift_folder_name):
-    shift = get_shift_path(shift_folder_name)
-    files = [f for f in os.listdir(shift) \
-        if os.path.isfile(os.path.join(shift, f))]
-    return files
-
-
-def show_time_stamp_file_names(shift_folder_name):
-    files = get_shift_files(shift_folder_name)
-    for i, f in enumerate(files):
-        print(i, f)
-
-
-def get_time_stamp_file_paths(shift_folder_name):
-    shift = get_shift_path(shift_folder_name)
-    files = get_shift_files(shift_folder_name)
-    return [os.path.join(shift, f) for f in files]
-
-
-def get_time_stamp_file_path(shift_folder_name, time_stamp_file_name):
-    shift = get_shift_path(shift_folder_name)
-    return os.path.join(shift, time_stamp_file_name)
-
-
 class WorkingDirectory():
     def __init__(self, wd):
         self.wd = wd
 
-
     def fi(self, file_name):
         return os.path.join(self.wd, file_name)
+
+
+class PathAssistant():
+    def __init__(self, shift_fodler_name, ignore_files=None):
+        self.shift_folder_name = shift_fodler_name
+        self.time_stamp_files_folder_path = \
+            os.path.join(shifts_folder,
+                         self.shift_folder_name, "time_stamp_files")
+        self.ignore_files = ['desktop.ini']
+        if ignore_files:
+            self.ignore_files += ignore_files
+
+    def get_time_stamp_files_folder_path(self):
+        return os.path.join(shifts_folder, self.shift_folder_name,
+                            "time_stamp_files")
+
+    def get_shift_cache_folder_path(self):
+        return os.path.join(self.time_stamp_files_folder_path, "cache")
+
+    def get_shift_files(self):
+        shift = self.time_stamp_files_folder_path
+        files = [f for f in os.listdir(shift)
+                 if os.path.isfile(os.path.join(shift, f))]
+        return [f for f in files if (f not in self.ignore_files)]
+
+    def show_time_stamp_file_names(self):
+        files = self.get_shift_files()
+        for i, f in enumerate(files):
+            print(i, f)
+
+    def get_time_stamp_file_paths(self):
+        shift = self.time_stamp_files_folder_path
+        files = self.get_shift_files()
+        return [os.path.join(shift, f) for f in files]
+
+    def get_time_stamp_file_path(self, time_stamp_file_name):
+        shift = self.time_stamp_files_folder_path
+        return os.path.join(shift, time_stamp_file_name)
+
+    def get_time_stamp_files_dir(self):
+        return WorkingDirectory(self.time_stamp_files_folder_path)

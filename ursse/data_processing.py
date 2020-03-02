@@ -66,23 +66,35 @@ def read_event_delays(file_path):
         return save_event_delays(file_path)
 
 
-
-def plot_arrival_time_hist(t_delays, gate, bins=None,
-                           yscale='log', saveas=None):
+def plot_arrival_time_hist(t_delays, gate=None, bins=None,
+                           yscale='log', saveas=None,
+                           shift_folder_name=None,
+                           time_stamp_file_name=None):
     ax = sns.distplot(t_delays, kde=False, bins=bins)
     ax.set_yscale(yscale)
     ax.set_ylabel('Occurrences of photocounts')
     ax.set_xlabel('Time relaltive to IOTA clock, ps')
-    plt.axvline(gate[0])
-    plt.axvline(gate[1])
+    if gate:
+        plt.axvline(gate[0])
+        plt.axvline(gate[1])
+        ax.text(0.95, 0.01, 'gate = ({:.1f}, {:.1f}) ps'.format(gate[0],gate[1]),
+                verticalalignment='bottom', horizontalalignment='right',
+                transform=ax.transAxes, fontsize=15)
+    title = "Histogram for photon count arrival time.\n"
+    if shift_folder_name:
+        title += "Shift folder: {}. ".format(shift_folder_name)
+    if time_stamp_file_name:
+        title += "File: {}".format(time_stamp_file_name)
+    plt.title(title)
     if saveas:
         plt.savefig(saveas)
     plt.show()
 
 
 def get_events_array(df, n_revolutions, gate):
-    counts_revolutions = df.revolution.values[df.delay.between(gate[0], gate[1])]
-    if np.any(np.diff(counts_revolutions)==0):
+    counts_revolutions = \
+        df.revolution.values[df.delay.between(gate[0], gate[1])]
+    if np.any(np.diff(counts_revolutions) == 0):
         raise Exception("More than one event per revolution within the gate"
                         " encountered. But it should never happen!")
     events = np.zeros(n_revolutions, dtype=np.uint8)
@@ -98,7 +110,7 @@ def get_fanos(events, n_revolutions, n_of_chunks=50,
     chunk_length = n_revolutions // n_of_chunks
     new_length = n_of_chunks * chunk_length
     chunks = np.reshape(events[:new_length], (n_of_chunks, chunk_length))
-    report['chunck_length'] = chunk_length
+    report['chunk_length'] = chunk_length
     n_events = sum(events)
     report['n_events'] = n_events
     fanos = np.apply_along_axis(calc_Fano_from_counts_per_time_window,
@@ -110,7 +122,7 @@ def get_fanos(events, n_revolutions, n_of_chunks=50,
     f2 = fanos[i2]
     fano_interval = (f1, f2)
     report['fano_interval'] = fano_interval
-    report['fnao_interval_percentiles'] = stat_interval
+    report['fano_interval_percentiles'] = stat_interval
     fano_median = np.median(fanos)
     report['fano_median'] = fano_median
     fano_mean = np.mean(fanos)
@@ -123,21 +135,34 @@ def get_fanos(events, n_revolutions, n_of_chunks=50,
     return fanos, report
 
 
-def plot_fanos_hist(fanos, fano_interval=None, bins=None):
-    sns.distplot(fanos, kde=False, bins=bins)
-    plt.xlabel("F-1")
-    plt.ylabel("Occurences")
-    plt.title("Sampling distribution of Fano factor")
-    if fano_interval:
+def plot_fanos_hist(fanos, report=None, bins=None,
+                    shift_folder_name=None,
+                    time_stamp_file_name=None):
+    ax = sns.distplot(fanos, kde=False, bins=bins)
+    ax.set_xlabel("F-1")
+    ax.set_ylabel("Occurences")
+    ax.set_title("Sampling distribution of Fano factor")
+    if report:
+        fano_interval = report['fano_interval']
+        perc = report['fano_interval_percentiles']
         plt.axvline(fano_interval[0])
         plt.axvline(fano_interval[1])
+        ax.text(0.95, 0.01, 'Vertical lines represent the percentiles ({:.3f}, {:.3f})'
+                .format(perc[0], perc[1]),
+                verticalalignment='bottom', horizontalalignment='right',
+                transform=ax.transAxes, fontsize=15)
+    title = "Histogram for Fano factor.\n"
+    if shift_folder_name:
+        title += "Shift folder: {}. ".format(shift_folder_name)
+    if time_stamp_file_name:
+        title += "File: {}".format(time_stamp_file_name)
+    ax.set_title(title)
     plt.show()
 
 
-def process_file(file_name, channel=1, gate=(59000, 70000), n_of_chunks=50,
+def process_file(file_name, gate=(60000, 70000), n_of_chunks=50,
                  print_output=True, bins_delay=None, bins_fano=None):
-    f = HydraHarpFile(file_name, safemode=False)
-    df, n_revolutions = get_event_delays(f, channel)
+    df, n_revolutions = read_event_delays(file_name)
     t_delays = df.delay
     if print_output:
         plot_arrival_time_hist(t_delays, gate, bins=bins_delay)
@@ -145,5 +170,5 @@ def process_file(file_name, channel=1, gate=(59000, 70000), n_of_chunks=50,
     fanos, report = get_fanos(events, n_revolutions, n_of_chunks,
                               print_report=print_output)
     if print_output:
-        plot_fanos_hist(fanos, report['fano_interval'], bins=bins_fano)
+        plot_fanos_hist(fanos, report, bins=bins_fano)
     return fanos, report
