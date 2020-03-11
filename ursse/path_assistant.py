@@ -1,6 +1,7 @@
 import os
 import sys
-data_folder = 'G:\\My Drive\\UHCICAGO\\Thesis\\URSSE'
+import json
+data_folder = json.loads()["data_folder"] # '/mnt/c/Users/lobac_000/OneDrive - Fermi National Accelerator Laboratory/URSSE'
 shifts_folder = os.path.join(data_folder, 'shifts')
 shift_folders = os.listdir(shifts_folder)
 
