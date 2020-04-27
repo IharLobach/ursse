@@ -46,3 +46,12 @@ def get_properties_in_time_bins(df):
         'count': grouped.delay.count(),
         'std': grouped.delay.std()})
     return res_df
+
+
+def get_dfs_for_all_buckets(df, one_of_the_gates):
+    four_gates = get_bucket_gates(one_of_the_gates)
+    bucket_dfs =\
+        [df[(df.delay > gate[0]) & (df.delay < gate[1])] for
+         gate in four_gates]
+    return bucket_dfs
+    

@@ -27,6 +27,13 @@ class PathAssistant():
         self.time_stamp_files_folder_path = \
             os.path.join(shifts_folder,
                          self.shift_folder_name, "time_stamp_files")
+        self.shift_dir = os.path.join(shifts_folder,
+                                      self.shift_folder_name)
+        self.shift_results_dir = os.path.join(self.shift_dir,
+                                              "results")
+        self.waveforms_folder_path = \
+            os.path.join(self.shift_dir, "waveforms")
+        self.acnet_data_dir = os.path.join(self.shift_dir, "acnet_data")
         self.ignore_files = ['desktop.ini']
         if ignore_files:
             self.ignore_files += ignore_files
@@ -60,3 +67,12 @@ class PathAssistant():
 
     def get_time_stamp_files_dir(self):
         return WorkingDirectory(self.time_stamp_files_folder_path)
+
+    def get_waveforms_dir(self):
+        return WorkingDirectory(self.waveforms_folder_path)
+
+    def get_results_dir(self):
+        return WorkingDirectory(self.shift_results_dir)
+
+    def get_acnet_data_dir(self):
+        return WorkingDirectory(self.acnet_data_dir)
