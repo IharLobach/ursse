@@ -113,8 +113,9 @@ def get_fanos(events, n_revolutions, n_of_chunks=50,
     report['chunk_length'] = chunk_length
     n_events = sum(events)
     report['n_events'] = n_events
-    fanos = np.apply_along_axis(calc_Fano_from_counts_per_time_window,
-                                1, chunks)
+    # fanos = np.apply_along_axis(calc_Fano_from_counts_per_time_window,
+    #                             1, chunks)
+    fanos = np.var(chunks, axis=1)/np.mean(chunks, axis=1)-1
     fanos = np.sort(fanos)
     i1 = int(stat_interval[0]*len(fanos))
     i2 = int(stat_interval[1]*len(fanos))
