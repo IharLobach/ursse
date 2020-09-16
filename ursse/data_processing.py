@@ -158,7 +158,7 @@ def plot_fanos_hist(fanos, report=None, bins=None,
     if time_stamp_file_name:
         title += "File: {}".format(time_stamp_file_name)
     ax.set_title(title)
-    plt.show()
+    return ax
 
 
 def process_file(file_name, gate=(60000, 70000), n_of_chunks=50,
