@@ -167,14 +167,14 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
     return phase_df
 
 
-def get_sz_df(df0, dt=0.1, spad_tts=0.35):
+def get_sz_df(df0, spad_tts_ns, dt=0.1):
     revolutions_per_dt = dt/iota_period_sec
     df0['index_of_dt_bin'] = (df0.revolution/revolutions_per_dt).astype(int)
     df0['time_sec'] = df0['index_of_dt_bin']*dt+dt/2
     rms_delay_df = pd.DataFrame({
         'time_sec': df0.groupby('index_of_dt_bin')['index_of_dt_bin']
         .mean()*dt+dt/2,
-        'sz_ns': np.sqrt(df0.groupby('index_of_dt_bin').delay.std()**2-spad_tts**2)
+        'sz_ns': np.sqrt(df0.groupby('index_of_dt_bin').delay.std()**2-spad_tts_ns**2)
     }).reset_index(drop=True)
     return rms_delay_df
 
