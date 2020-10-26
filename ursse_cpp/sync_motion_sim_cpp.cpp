@@ -27,12 +27,34 @@ double c = 2.9979e10;
 double hbar_c = 0.1973269804e-4;
 double rho = 70;
 
-std::random_device rd;
-std::mt19937 gen(rd());
+// std::random_device rd;
+// std::mt19937 gen(rd());
 
+
+// std::default_random_engine generator;
+// std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
 std::default_random_engine generator;
-std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
+
+np::ndarray RandomEnergyGammaDistribution(np::ndarray params)
+{
+    const double *prms = reinterpret_cast<double *>(params.get_data());
+    double k = (double)(prms[0]);
+    double theta = (double) (prms[1]);
+    int size = (int)(prms[2]);
+    int seed = (int)(prms[3]);
+    std::gamma_distribution<double> dist(k, theta);
+    std::srand(seed);
+    std::vector<double> rand_res(size);
+    for(int i=0;i<size;i++){
+        rand_res[i] = dist(generator);
+    }
+    Py_intptr_t sh[1] = {rand_res.size()};
+    np::ndarray result = np::zeros(1, sh, np::dtype::get_builtin<double>());
+    std::copy(rand_res.begin(), rand_res.end(), reinterpret_cast<double *>(result.get_data()));
+    return result;
+}
 
 double Cheb(double a, double b, double* C, int n, double x){
     double y = (2*x-a-b)/(b-a);
@@ -48,7 +70,6 @@ double Cheb(double a, double b, double* C, int n, double x){
     }
     return y*d-dd+0.5*C[0];
 }
-
 
 double InvSynchFractInt(double x){
     if (x < 0.7){
@@ -71,69 +92,6 @@ double InvSynchFractInt(double x){
 }
 
 
-
-p::dict get_trajectory(np::ndarray params)
-{
-    const double *prms = reinterpret_cast<double *>(params.get_data());
-    double gamma = prms[0];
-    double alpha = prms[1];
-    double V = prms[2];
-    double f = prms[3];
-    int nper = (int)(prms[4]);
-    double phi0 = prms[5];
-    double delta0 = prms[6];
-    int seed = (int)(prms[7]);
-    double nav = gamma_to_nav*gamma;
-    std::poisson_distribution<> pois(nav);
-
-    double Ec = 3 / 2 * hbar_c * pow(gamma, 3) / rho;
-    double Et = 88.9e-7*pow((gamma*0.511),4)/rho;
-    double Scale = 15*sqrt(3)/8*Et;
-    
-
-    double E0 = gamma*511000;
-    int h = 4;
-    double v0 = V/E0;
-    double S = Scale/E0;
-    double eta = alpha - 1/pow(gamma,2);
-    double w = 2*M_PI*h*eta;
-
-
-    std::vector<double> phis(nper);
-    std::vector<double> deltas(nper);
-
-    std::srand(seed);
-    double p_prev = phi0;
-    double d_prev = delta0;
-    double e, d_new, p_new;
-    for(int i=0;i<nper;i++){
-        phis[i] = p_prev;
-        deltas[i] = d_prev;
-        int nph = pois(gen);
-        double e=0;
-        for (int i = 0; i < nph; i++)
-        {
-            e += InvSynchFractInt(distribution(generator)) * Ec;
-        }
-        double d_new = d_prev + v0*sin(p_prev) - e/E0;
-        double p_new = p_prev - w*d_new;
-        d_prev = d_new;
-        p_prev = p_new;
-    }
-
-    Py_intptr_t sh[1] = {phis.size()};
-    np::ndarray result_phis = np::zeros(1, sh, np::dtype::get_builtin<double>());
-    std::copy(phis.begin(), phis.end(), reinterpret_cast<double *>(result_phis.get_data()));
-    np::ndarray result_deltas = np::zeros(1, sh, np::dtype::get_builtin<double>());
-    std::copy(deltas.begin(), deltas.end(), reinterpret_cast<double *>(result_deltas.get_data()));
-
-    p::dict d;
-    d["phi"] = result_phis;
-    d["delta"] = result_deltas;
-
-    return d;
-}
-
 p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revolutions)
 {
     const double *prms = reinterpret_cast<double *>(params.get_data());
@@ -142,23 +100,20 @@ p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revo
     double alpha = prms[1];
     double V = prms[2];
     double f = prms[3];
-    double phi0 = prms[4];
-    double delta0 = prms[5];
-    int seed = (int)(prms[6]);
-
-    double nav = gamma_to_nav*gamma;
-    std::poisson_distribution<> pois(nav);
-
-    double Ec = 3 / 2 * hbar_c * pow(gamma, 3) / rho;
-    double Et = 88.9e-7 * pow((gamma * 0.511), 4) / rho;
-    double Scale = 15 * sqrt(3) / 8 * Et;
+    int h = (int)(prms[4]);
+    double JE = prms[5];
+    double k = prms[6];
+    double theta = prms[7];
+    double phi0 = prms[8];
+    double delta0 = prms[9];
+    int seed = (int)(prms[10]);
 
     double E0 = gamma * 511000;
-    int h = 4;
     double v0 = V / E0;
-    double S = Scale / E0;
     double eta = alpha - 1 / pow(gamma, 2);
     double w = 2 * M_PI * h * eta;
+    double eav = k * theta;
+    std::gamma_distribution<double> distribution(k, theta);
     int64_t npoints = revolutions.get_shape()[0];
     std::vector<double> phis(npoints);
     std::vector<double> deltas(npoints);
@@ -178,13 +133,9 @@ p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revo
             rev_idx++;
             cur_rev = revs[rev_idx]; 
         }
-        int nph = pois(gen);
-        double e = 0;
-        for (int i = 0; i < nph; i++)
-        {
-            e += InvSynchFractInt(distribution(generator)) * Ec;
-        }
-        d_new = d_prev + v0 * sin(p_prev) - e / E0;
+        e = distribution(generator);
+        d_new = d_prev + v0 * sin(p_prev);
+        d_new = d_new - (e - eav * (1 - JE * d_new)) / E0;
         p_new = p_prev - w * d_new;
         d_prev = d_new;
         p_prev = p_new;
@@ -208,7 +159,7 @@ BOOST_PYTHON_MODULE(sync_motion_sim_cpp)
     using namespace boost::python;
     Py_Initialize();
     np::initialize();
-    def("get_trajectory", get_trajectory);
     def("get_simulated_revolution_delay_data", get_simulated_revolution_delay_data);
     def("InvSynchFractInt", InvSynchFractInt);
+    def("RandomEnergyGammaDistribution", RandomEnergyGammaDistribution);
 }
