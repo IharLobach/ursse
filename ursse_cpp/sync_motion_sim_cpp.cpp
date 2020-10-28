@@ -112,6 +112,7 @@ p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revo
     double v0 = V / E0;
     double eta = alpha - 1 / pow(gamma, 2);
     double w = 2 * M_PI * h * eta;
+    double dwOverddelta = 2 * M_PI * h * 2 / pow(gamma, 2);
     double eav = k * theta;
     std::gamma_distribution<double> distribution(k, theta);
     int64_t npoints = revolutions.get_shape()[0];
@@ -134,9 +135,8 @@ p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revo
             cur_rev = revs[rev_idx]; 
         }
         e = distribution(generator);
-        d_new = d_prev + v0 * sin(p_prev);
-        d_new = d_new - (e - eav * (1 - JE * d_new)) / E0;
-        p_new = p_prev - w * d_new;
+        d_new = d_prev + v0 * sin(p_prev) - (e - eav * (1 - JE * d_prev)) / E0;
+        p_new = p_prev - (w+dwOverddelta*d_new) * d_new;
         d_prev = d_new;
         p_prev = p_new;
     }
