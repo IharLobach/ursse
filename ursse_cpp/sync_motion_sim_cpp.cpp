@@ -34,7 +34,7 @@ double rho = 70;
 // std::default_random_engine generator;
 // std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-std::default_random_engine generator;
+
 
 
 np::ndarray RandomEnergyGammaDistribution(np::ndarray params)
@@ -43,10 +43,11 @@ np::ndarray RandomEnergyGammaDistribution(np::ndarray params)
     double k = (double)(prms[0]);
     double theta = (double) (prms[1]);
     int size = (int)(prms[2]);
-    int seed = (int)(prms[3]);
+    unsigned seed = (unsigned)(prms[3]);
+    std::default_random_engine generator(seed);
     std::gamma_distribution<double> dist(k, theta);
-    std::srand(seed);
     std::vector<double> rand_res(size);
+    
     for(int i=0;i<size;i++){
         rand_res[i] = dist(generator);
     }
@@ -106,26 +107,30 @@ p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revo
     double theta = prms[7];
     double phi0 = prms[8];
     double delta0 = prms[9];
-    int seed = (int)(prms[10]);
-
+    unsigned seed = (unsigned)(prms[10]);
+    double rf_phase_std = prms[11];
+    
     double E0 = gamma * 511000;
     double v0 = V / E0;
     double eta = alpha - 1 / pow(gamma, 2);
     double w = 2 * M_PI * h * eta;
     double dwOverddelta = 2 * M_PI * h * 2 / pow(gamma, 2);
     double eav = k * theta;
-    std::gamma_distribution<double> distribution(k, theta);
+    std::default_random_engine generator (seed);
+    std::gamma_distribution<double> energy_loss_dist(k, theta);
+    std::normal_distribution<double> rf_dist(0.0, rf_phase_std);
+
     int64_t npoints = revolutions.get_shape()[0];
     std::vector<double> phis(npoints);
     std::vector<double> deltas(npoints);
     int64_t nper = revs[npoints-1]+1;
-
-    std::srand(seed);
+    
     double p_prev = phi0;
     double d_prev = delta0;
     int64_t rev_idx = 0;
     int64_t cur_rev = revs[rev_idx];
     double e, d_new, p_new;
+    bool include_rf_noise = (rf_phase_std > 0);
     for (int i = 0; i < nper; i++)
     {
         if (i == cur_rev){
@@ -134,9 +139,12 @@ p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revo
             rev_idx++;
             cur_rev = revs[rev_idx]; 
         }
-        e = distribution(generator);
+        e = energy_loss_dist(generator);
         d_new = d_prev + v0 * sin(p_prev) - (e - eav * (1 - JE * d_prev)) / E0;
         p_new = p_prev - (w+dwOverddelta*d_new) * d_new;
+        if (include_rf_noise){
+            p_new += rf_dist(generator);
+        }
         d_prev = d_new;
         p_prev = p_new;
     }

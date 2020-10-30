@@ -23,6 +23,7 @@ plt.rcParams.update({'font.size': 16, 'legend.fontsize': 16})
 from scipy.optimize import curve_fit
 import scipy.interpolate
 from scipy import stats
+iota_period_sec = get_from_config("IOTA_revolution_period")
 
 
 def get_revolution_delay_df_one_gate(
@@ -48,7 +49,7 @@ def f(t, a0, A, B, T):
 
 def get_initial_sync_period_estimate(df0, t0=2372,
                                      first_fit_nper=30,
-                                     show_plot=False):
+                                     show_plot=False, errorbar=0.35):
     df0_first_fit = df0[df0['revolution']<t0*first_fit_nper]
     x = df0_first_fit['revolution'].values
     y = df0_first_fit['delay'].values
@@ -64,7 +65,7 @@ def get_initial_sync_period_estimate(df0, t0=2372,
                      'errorbar.capsize': 3,
                      'figure.figsize':(15,3)})
         fig, ax = plt.subplots()
-        ax.errorbar(x, y, label='SPAD counts', yerr=0.35, marker='o', linestyle='None')
+        ax.errorbar(x, y, label='SPAD counts', yerr=errorbar, marker='o', linestyle='None')
         ax.plot(x_fit, y_fit, label='Least squares fit')
         ax.set_ylabel('Detection time relative to\n IOTA revolution marker, ns', fontsize=16)
         ax.set_xlabel('IOTA revolution number')
@@ -164,7 +165,19 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
                              "phase_rad": 2*np.pi*(rev_numbers-trig_times/Tfit)
                              })
 
-    return phase_df
+    fdf = fits_df.loc[:,
+                      ['start_idx',
+                       'end_idx',
+                       'start_revolution',
+                       'end_revolution',
+                       'A',
+                       'B']]
+    fdf['mid_revolution'] = (fdf['start_revolution']+fdf['end_revolution'])/2
+    fdf['mid_time_sec'] = fdf['mid_revolution']*iota_period_sec
+    fdf['Amplitude_ns'] = np.sqrt(fdf['A']**2+fdf['B']**2)
+    fdf['Amp2'] = fdf['Amplitude_ns']**2
+    fdf['Kicks'] = fdf['Amp2'].diff().fillna(0)
+    return phase_df, fdf
 
 
 def get_sz_df(df0, spad_tts_ns, dt=0.1):
