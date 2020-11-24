@@ -90,6 +90,7 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
     starts = starts[:nintervals]
     ends = ends[:nintervals]
     
+
     alist, blist = [],[]
     for s,e in zip(starts, ends):
         v = df0.loc[s:e,:]
@@ -156,7 +157,7 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
     ts_dif = np.diff(ts)
     timeline = np.arange(len(ts) - 1)
     interpolated_time = timeline - (ts[1:] - trigger_level)\
-                        / np.where(ts_dif != 0, ts_dif,10)
+                        / np.where(ts_dif != 0, ts_dif, 10)
     trig_times = nper_step*interpolated_time[pos_edges > 0] + 1
 
     rev_numbers = np.arange(len(trig_times))
@@ -172,8 +173,7 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
                        'end_revolution',
                        'A',
                        'B']]
-    fdf['mid_revolution'] = (fdf['start_revolution']+fdf['end_revolution'])/2
-    fdf['mid_time_sec'] = fdf['mid_revolution']*iota_period_sec
+    fdf['mid_time_sec'] = (fitper-overlapper)*iota_period_sec*T0*np.arange(len(fdf.index))
     fdf['Amplitude_ns'] = np.sqrt(fdf['A']**2+fdf['B']**2)
     fdf['Amp2'] = fdf['Amplitude_ns']**2
     fdf['Kicks'] = fdf['Amp2'].diff().fillna(0)
