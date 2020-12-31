@@ -161,7 +161,8 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
     trig_times = nper_step*interpolated_time[pos_edges > 0] + 1
 
     rev_numbers = np.arange(len(trig_times))
-    Tfit = stats.linregress(rev_numbers, trig_times).slope
+    # Tfit = stats.linregress(rev_numbers, trig_times).slope
+    Tfit = (trig_times[-1]-trig_times[0])/(rev_numbers[-1]-rev_numbers[0])
     phase_df = pd.DataFrame({"time_sec": trig_times*iota_period_sec,
                              "phase_rad": 2*np.pi*(rev_numbers-trig_times/Tfit)
                              })
