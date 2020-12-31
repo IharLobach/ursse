@@ -79,7 +79,7 @@ def get_initial_sync_period_estimate(df0, t0=2372,
 
 
 def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
-                                           overlapper=3, nper_step=10):
+                                         overlapper=3, nper_step=10):
     fitrange = T0*fitper
     overlaprange = T0*overlapper
     starts = df0.groupby(((df0['revolution'].values)//(fitrange-overlaprange)).astype(int))\
@@ -143,7 +143,7 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
     res = fits_df.apply(get_one_fit, axis=1)
     res = pd.concat(res.to_list(), ignore_index=True, sort=False)
 
-    new_revs = np.arange(0,res['revolution'].max(),nper_step)
+    new_revs = np.arange(0, res['revolution'].max(), nper_step)
     new_dels = scipy.interpolate.interp1d(res['revolution'], res['delay'],
                             bounds_error=False,
                             fill_value="extrapolate")(new_revs)
