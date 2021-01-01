@@ -35,7 +35,7 @@ def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
         meas_df['revolution'],
         tau0=tau0, delta0=delta0, rand_seed_int=rand_seed_int,
         rf_noise_std=rf_noise_std)
-    return sim_df
+    return meas_df, sim_df
 
 
 def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
@@ -64,6 +64,16 @@ def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
 
 
 def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None):
+    """[summary]
+
+    Args:
+        rf_noise_std (float): [description]
+        files_and_pars (list of dic, optional): list of files and parameters for these files. Defaults to None. See source code: it uses five files from 02-28-2020 and 03-05-2020
+        V (float, optional): RF voltage. Defaults to None (uses config.json).
+
+    Returns:
+        [type]: [description]
+    """
     if files_and_pars is None:
         files_and_pars = [
             {
@@ -104,7 +114,7 @@ def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None):
         ]
     for i, el in enumerate(files_and_pars):
         print(f"working on {i+1} out of {len(files_and_pars)}")
-        el['sim_df'] = calc_sim_df_one_file(el['shift'],
+        el['meas_df'], el['sim_df'] = calc_sim_df_one_file(el['shift'],
                                             el['file'],
                                             rf_noise_std,
                                             el['tau0'],
