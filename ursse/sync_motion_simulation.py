@@ -8,6 +8,139 @@ from ursse.path_assistant import PathAssistant
 import os
 from scipy.stats import chisquare
 
+class Model:
+    def __init__(
+        self,
+        rf_noise_std,
+        gamma=None,
+        alpha=None,
+        f=None,
+        h=None,
+        k=None,
+        theta=None,
+        meMeV=None,
+        rho=None,
+        JE=None,
+        files_and_pars=None,
+        V=None,
+        spad_tts=0.35,
+        spad_mean=0.5,
+        rms_size_dt_sec=0.1
+        ):
+        self.rf_noise_std = rf_noise_std
+        if gamma is None:
+            self.gamma = get_from_config("gamma")
+        else:
+            self.gamma = gamma
+        if alpha is None:
+            self.alpha = get_from_config("ring_alpha")
+        else:
+            self.alpha = alpha
+        if f is None:
+            self.f = 1/get_from_config("IOTA_revolution_period")
+        else:
+            self.f = f
+        if h is None:
+            self.h = get_from_config("RF_q")
+        else:
+            self.h = h
+        if k is None:
+            self.k = get_from_config("M")
+        else:
+            self.k = k
+        if theta is None:
+            self.theta = get_from_config("Et")/self.k
+        else:
+            self.theta = theta
+        if meMeV is None:
+            self.meMeV = get_from_config("me_MeV")
+        else:
+            self.meMeV = meMeV
+        if rho is None:
+            self.rho = get_from_config("dipole_rho_m")
+        else:
+            self.rho = rho
+        if JE is None:
+            self.JE = get_from_config("damping_partition_JE")
+        else:
+            self.JE =JE
+        if files_and_pars is None:
+            self.files_and_pars = [
+                    {
+                        "shift": 'shift_02_28_2020',
+                        "file": '1el_002.ptu',
+                        "tau0": None,
+                        "delta0": None,
+                        "rand_seed_int": 1,
+                        "spad_tts_rand_seed": None
+                    },
+                    {
+                        "shift": 'shift_02_28_2020',
+                        "file": '1el_000.ptu',
+                        "tau0": None,
+                        "delta0": None,
+                        "rand_seed_int": 2,
+                        "spad_tts_rand_seed": None
+                    },
+                    {
+                        "shift": 'shift_02_28_2020',
+                        "file": '1el_001.ptu',
+                        "tau0": None,
+                        "delta0": None,
+                        "rand_seed_int": 3,
+                        "spad_tts_rand_seed": None
+                    },
+                    {
+                        "shift": 'shift_03_05_2020',
+                        "file": '1el_filters_000.ptu',
+                        "tau0": None,
+                        "delta0": None,
+                        "rand_seed_int": 4,
+                        "spad_tts_rand_seed": None
+                    },
+                    {
+                        "shift": 'shift_03_05_2020',
+                        "file": '1el_filters_008.ptu',
+                        "tau0": None,
+                        "delta0": None,
+                        "rand_seed_int": 5,
+                        "spad_tts_rand_seed": None
+                    }
+                ]
+        else:
+            self.files_and_pars = files_and_pars
+        self.V = get_from_config("Vrf") if V is None else V
+        self.spad_tts = spad_tts
+        self.spad_mean = spad_mean
+        self.rms_size_dt_sec = rms_size_dt_sec
+
+    def simulate(self):
+        calc_sim_df_several_files(self.rf_noise_std, self.files_and_pars,
+                                  self.V)
+        return self.files_and_pars
+    
+    def add_spad_tts_do_fitting_and_binning(self, verbose=False):
+        add_spad_tts_do_fitting_and_binning(self.files_and_pars,
+                                    spad_tts=self.spad_tts,
+                                    mean_spad=self.spad_mean,
+                                    verbose=verbose,
+                                    rms_size_dt_sec=self.rms_size_dt_sec)
+        return self.files_and_pars
+    
+    def get_meas_sim_comparison(self, feature, nbins=20,
+                                do_chi2=True, chi2_min_count=50,
+                                show_plot=True):
+        get_meas_sim_comparison(self.files_and_pars, feature,
+                                nbins, do_chi2, chi2_min_count, show_plot,
+                                rf_noise_std=self.rf_noise_std,
+                                spad_tts=self.spad_tts,
+                                spad_mean=self.spad_mean)
+        
+
+        
+        
+
+
 
 def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
                 rand_seed_int=1, V=None):
@@ -228,7 +361,11 @@ def get_meas_sim_hist(input_list, nbins=20,
 
 def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
                             do_chi2=True, chi2_min_count=50,
-                            show_plot=True):
+                            show_plot=True,
+                            rf_noise_std=None,
+                            spad_tts=None,
+                            spad_mean=None,
+                            dt=None):
     """files_and_pars must have pre-calculated fits and rms length
 
     Args:
@@ -252,6 +389,16 @@ def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
         input_list = [{'meas': el['meas_sz_df']['sz_ns'], 'sim': el['sim_sz_df']['sz_ns']}
                       for el in files_and_pars]
         xlabel = "RMS of electron position in a time window"
+        if dt is not None:
+            xlabel += f" dt={dt:.2f} sec"
+    elif feature == "slow_phase":
+        def aux_func(ser):
+            return (ser-ser.mean()).abs()
+        input_list = [
+            {'meas': aux_func(el['meas_phase_df']['phase_rad']),
+             'sim': aux_func(el['sim_phase_df']['phase_rad'])}
+                      for el in files_and_pars]
+        xlabel = r"|Slow phase-$\langle$Slow phase$\rangle$| $(\mathrm{rad})^2$"
     else:
         raise ValueError("Unknown feature for comparison. Choose from"
         "amplitude, rms_length")
@@ -266,10 +413,17 @@ def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
                 alpha=0.5, label="Simulation")
         ax.set_xlabel(xlabel)
         ax.set_ylabel("Occurrences")
-        ax.annotate(f"p-value = {hist_dic['chi-squared'].pvalue}" \
-                    + "\n" + f"meas_mean = {hist_dic['tot_means']['meas']:.2e}"
-                    + "\n" + f"sim_mean = {hist_dic['tot_means']['sim']:.2e}",
-            (0.5,0.5), xycoords='axes fraction')
+        desc = f"p-value = {hist_dic['chi-squared'].pvalue}" \
+                + "\n" + f"meas_mean = {hist_dic['tot_means']['meas']:.2e}" \
+                + "\n" + f"sim_mean = {hist_dic['tot_means']['sim']:.2e}"
+        if spad_tts is not None:
+            desc += "\n" + f"spad_tts = {spad_tts:.3f}"
+        if spad_mean is not None:
+            desc += "\n" + f"spad_mean = {spad_mean:.3f}"
+        if rf_noise_std is not None:
+            desc += "\n" + f"rf_noise_std = {rf_noise_std:.2e}"
+
+        ax.annotate(desc, (0.5, 0.5), xycoords='axes fraction')
         ax.legend()
         plt.show()
     return hist_dic
