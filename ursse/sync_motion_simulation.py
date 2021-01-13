@@ -129,17 +129,14 @@ class Model:
     
     def get_meas_sim_comparison(self, feature, nbins=20,
                                 do_chi2=True, chi2_min_count=50,
-                                show_plot=True):
-        get_meas_sim_comparison(self.files_and_pars, feature,
-                                nbins, do_chi2, chi2_min_count, show_plot,
+                                ax=None):
+        return get_meas_sim_comparison(self.files_and_pars, feature,
+                                nbins, do_chi2, chi2_min_count,
                                 rf_noise_std=self.rf_noise_std,
                                 spad_tts=self.spad_tts,
-                                spad_mean=self.spad_mean)
-        
-
-        
-        
-
+                                spad_mean=self.spad_mean,
+                                dt=self.rms_size_dt_sec,
+                                ax=ax)
 
 
 def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
@@ -361,11 +358,11 @@ def get_meas_sim_hist(input_list, nbins=20,
 
 def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
                             do_chi2=True, chi2_min_count=50,
-                            show_plot=True,
                             rf_noise_std=None,
                             spad_tts=None,
                             spad_mean=None,
-                            dt=None):
+                            dt=None,
+                            ax=None):
     """files_and_pars must have pre-calculated fits and rms length
 
     Args:
@@ -399,12 +396,19 @@ def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
              'sim': aux_func(el['sim_phase_df']['phase_rad'])}
                       for el in files_and_pars]
         xlabel = r"|Slow phase-$\langle$Slow phase$\rangle$| $(\mathrm{rad})^2$"
+    elif feature == "kick_to_amplitude":
+        def aux_func(ser):
+            return np.sqrt(ser.abs())
+        input_list = [
+            {'meas': aux_func(el['meas_fits_df']['Kicks']),
+             'sim': aux_func(el['sim_fits_df']['Kicks'])}
+                    for el in files_and_pars]
+        xlabel = "|Kick to Amplitude$^2$|$^{1/2}$ (ns)"
     else:
         raise ValueError("Unknown feature for comparison. Choose from"
-        "amplitude, rms_length")
+        "amplitude, rms_length, slow_phase, kick_to_amplitude")
     hist_dic = get_meas_sim_hist(input_list, nbins, do_chi2, chi2_min_count)
-    if show_plot:
-        fig, ax = plt.subplots(figsize=(15, 7))
+    if ax is not None:
         bins = hist_dic['bins']
         bin_centers = hist_dic['bin_centers']
         ax.hist(bin_centers, weights=hist_dic['aggregated_hists']['meas'], bins=bins, density=False,
@@ -413,7 +417,7 @@ def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
                 alpha=0.5, label="Simulation")
         ax.set_xlabel(xlabel)
         ax.set_ylabel("Occurrences")
-        desc = f"p-value = {hist_dic['chi-squared'].pvalue}" \
+        desc = f"p-value = {hist_dic['chi-squared'].pvalue:.2e}" \
                 + "\n" + f"meas_mean = {hist_dic['tot_means']['meas']:.2e}" \
                 + "\n" + f"sim_mean = {hist_dic['tot_means']['sim']:.2e}"
         if spad_tts is not None:
@@ -425,5 +429,4 @@ def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
 
         ax.annotate(desc, (0.5, 0.5), xycoords='axes fraction')
         ax.legend()
-        plt.show()
     return hist_dic

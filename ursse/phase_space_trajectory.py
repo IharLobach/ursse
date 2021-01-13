@@ -166,6 +166,7 @@ def get_phase_df_from_revoluton_delay_df(df0, T0, fitper=20,
     phase_df = pd.DataFrame({"time_sec": trig_times*iota_period_sec,
                              "phase_rad": 2*np.pi*(rev_numbers-trig_times/Tfit)
                              })
+    phase_df['phase_rad'] -= phase_df.loc[0, 'phase_rad']
 
     fdf = fits_df.loc[:,
                       ['start_idx',
