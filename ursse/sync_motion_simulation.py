@@ -25,7 +25,8 @@ class Model:
         V=None,
         spad_tts=0.35,
         spad_mean=0.5,
-        rms_size_dt_sec=0.1
+        rms_size_dt_sec=0.1,
+        amp_period_corr_dt=0.025
         ):
         self.rf_noise_std = rf_noise_std
         if gamma is None:
@@ -113,10 +114,11 @@ class Model:
         self.spad_tts = spad_tts
         self.spad_mean = spad_mean
         self.rms_size_dt_sec = rms_size_dt_sec
+        self.amp_period_corr_dt = amp_period_corr_dt
 
-    def simulate(self):
+    def simulate(self, load=False):
         calc_sim_df_several_files(self.rf_noise_std, self.files_and_pars,
-                                  self.V)
+                                  self.V, load)
         return self.files_and_pars
     
     def add_spad_tts_do_fitting_and_binning(self, verbose=False):
@@ -124,7 +126,8 @@ class Model:
                                     spad_tts=self.spad_tts,
                                     mean_spad=self.spad_mean,
                                     verbose=verbose,
-                                    rms_size_dt_sec=self.rms_size_dt_sec)
+                                    rms_size_dt_sec=self.rms_size_dt_sec,
+                                    amp_period_corr_dt_sec=self.amp_period_corr_dt)
         return self.files_and_pars
     
     def get_meas_sim_comparison(self, feature, nbins=20,
@@ -137,35 +140,52 @@ class Model:
                                 spad_mean=self.spad_mean,
                                 dt=self.rms_size_dt_sec,
                                 ax=ax)
+    
+    def plot_meas_sim_amp_period_corr(self, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        leg_done = False
+        for f in self.files_and_pars:
+            corr_dfs = [f['meas_amp_period_corr_df'], f['sim_amp_period_corr_df']]
+            for df, col, lab in zip(corr_dfs, ["blue", "red"], ["Measurement", "Simulation"]):
+                ax.plot(df['amp_ns'], 1e3*df['sync_period_sec'], '.', color=col,
+                        label=None if leg_done else lab)
+            leg_done = True
+        ax.set_ylabel("Sync. motion period (ms)")
+        ax.set_xlabel("Amplitude (ns)")
+        ax.legend()
 
 
 def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
-                rand_seed_int=1, V=None):
-    gamma = get_from_config("gamma")
-    alpha = get_from_config("ring_alpha")
-    if V is None:
-        V = get_from_config("Vrf")
-    f = 1/get_from_config("IOTA_revolution_period")
-    h = get_from_config("RF_q")
-    k = get_from_config("M")
-    theta = get_from_config("Et")/k
+                rand_seed_int=1, V=None, load=False):
     meas_df = pst.get_revolution_delay_df_one_gate(shift, file)
-    meMeV = get_from_config("me_MeV")
-    rho = get_from_config("dipole_rho_m")
-    JE = get_from_config("damping_partition_JE")
-    E0 = gamma*meMeV*1e6
-    eta = alpha - 1/gamma**2
-    delta_rms = 0.62e-6*gamma/np.sqrt(JE*rho)
-    if tau0 is None:
-        tau0 = 1e9*delta_rms / \
-            ((f*h)*2*np.pi*np.sqrt(V/(2*np.pi*E0*h*np.abs(eta))))
-    if delta0 is None:
-        delta0 = delta_rms
-    sim_df = sm.get_simulated_revolution_delay_data(
-        gamma, alpha, V, f, h, JE, k, theta,
-        meas_df['revolution'],
-        tau0=tau0, delta0=delta0, rand_seed_int=rand_seed_int,
-        rf_noise_std=rf_noise_std)
+    if load:
+        sim_df = pd.read_pickle(os.path.join(PathAssistant(shift).get_shift_cache_folder_path(), file.replace(".ptu", "_sim.pkl")))
+    else:
+        gamma = get_from_config("gamma")
+        alpha = get_from_config("ring_alpha")
+        if V is None:
+            V = get_from_config("Vrf")
+        f = 1/get_from_config("IOTA_revolution_period")
+        h = get_from_config("RF_q")
+        k = get_from_config("M")
+        theta = get_from_config("Et")/k
+        meMeV = get_from_config("me_MeV")
+        rho = get_from_config("dipole_rho_m")
+        JE = get_from_config("damping_partition_JE")
+        E0 = gamma*meMeV*1e6
+        eta = alpha - 1/gamma**2
+        delta_rms = 0.62e-6*gamma/np.sqrt(JE*rho)
+        if tau0 is None:
+            tau0 = 1e9*delta_rms / \
+                ((f*h)*2*np.pi*np.sqrt(V/(2*np.pi*E0*h*np.abs(eta))))
+        if delta0 is None:
+            delta0 = delta_rms
+        sim_df = sm.get_simulated_revolution_delay_data(
+            gamma, alpha, V, f, h, JE, k, theta,
+            meas_df['revolution'],
+            tau0=tau0, delta0=delta0, rand_seed_int=rand_seed_int,
+            rf_noise_std=rf_noise_std)
     return meas_df, sim_df
 
 
@@ -196,7 +216,7 @@ def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
     return sim_df
 
 
-def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None):
+def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None, load=False):
     """[summary]
 
     Args:
@@ -259,7 +279,8 @@ def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None):
                                             el['tau0'],
                                             el['delta0'],
                                             el['rand_seed_int'],
-                                            V)
+                                            V,
+                                            load)
         el['sim_df'] = el['sim_df_before_spad'].copy()
     return files_and_pars
 
@@ -268,7 +289,8 @@ def add_spad_tts_do_fitting_and_binning(files_and_pars,
                            spad_tts=0.35,
                            mean_spad=0.5,
                            verbose=False,
-                           rms_size_dt_sec=0.1):
+                           rms_size_dt_sec=0.1,
+                           amp_period_corr_dt_sec=0.025):
     for el in files_and_pars:
         el['sim_df'] = add_spad_tts_to_sim_df(
             el['sim_df_before_spad'], spad_tts, mean_spad,
@@ -292,6 +314,9 @@ def add_spad_tts_do_fitting_and_binning(files_and_pars,
                                         dt=rms_size_dt_sec)
         el["sim_polar_df"] = pst.get_polar_df(
             el["sim_phase_df"], el["sim_sz_df"])
+        corr_res = get_period_amp_corr(el, dt=amp_period_corr_dt_sec)
+        el['meas_amp_period_corr_df'] = corr_res['meas']
+        el['sim_amp_period_corr_df'] = corr_res['sim']
     return files_and_pars
 
 
@@ -406,7 +431,7 @@ def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
         xlabel = "|Kick to Amplitude$^2$|$^{1/2}$ (ns)"
     else:
         raise ValueError("Unknown feature for comparison. Choose from"
-        "amplitude, rms_length, slow_phase, kick_to_amplitude")
+                         "amplitude, rms_length, slow_phase, kick_to_amplitude")
     hist_dic = get_meas_sim_hist(input_list, nbins, do_chi2, chi2_min_count)
     if ax is not None:
         bins = hist_dic['bins']
@@ -430,3 +455,32 @@ def get_meas_sim_comparison(files_and_pars, feature, nbins=20,
         ax.annotate(desc, (0.5, 0.5), xycoords='axes fraction')
         ax.legend()
     return hist_dic
+
+
+def get_period_amp_corr_from_dfs(fits_df_in, phase_df_in, dt=0.025):
+    fits_df = fits_df_in.copy()
+    phase_df = phase_df_in.copy()
+    fits_df['time'] = dt * ((fits_df['mid_time_sec']) // dt)
+    reduced_fits_df = fits_df.loc[:, ['time', 'Amplitude_ns']].groupby(
+        fits_df['time']).mean()
+    phase_df['time'] = dt * (phase_df['time_sec'] // dt)
+    phase_df['idx'] = phase_df.index
+    grouped_phase_df = phase_df.loc[:, [
+        'time', 'time_sec', 'idx']].groupby(phase_df['time'])
+    period_df = grouped_phase_df.mean()
+    period_df['delta_t'] = grouped_phase_df['time_sec'].apply(
+        lambda a: a.iloc[-1]-a.iloc[0])
+    period_df['idx'] = grouped_phase_df['idx'].apply(
+        lambda a: a.iloc[-1]-a.iloc[0])
+    period_df['T'] = (lambda x: x['delta_t']/x['idx'])(period_df)
+    return pd.DataFrame({
+        'time_sec': reduced_fits_df['time'],
+        'amp_ns': reduced_fits_df['Amplitude_ns'],
+        'sync_period_sec': period_df['T']}).reset_index(drop=True)
+
+
+def get_period_amp_corr(f, dt=0.025):
+    return {
+        'meas': get_period_amp_corr_from_dfs(f['meas_fits_df'], f['meas_phase_df'], dt),
+        'sim': get_period_amp_corr_from_dfs(f['sim_fits_df'], f['sim_phase_df'], dt)
+    }
