@@ -202,8 +202,10 @@ def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
     Returns:
         [type]: [description]
     """
-    np.random.seed(np_rand_seed)
     sim_df = sim_df.copy()
+    if spad_tts == 0:
+        return sim_df
+    np.random.seed(np_rand_seed)
     std_spad = spad_tts
     theta_spad = std_spad**2/mean_spad
     k_spad = mean_spad/theta_spad
