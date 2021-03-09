@@ -17,12 +17,18 @@ def initialize():
     with open(pickle_path, 'wb') as f:
         pickle.dump({}, f)
 
-def newval(name, val, unit):
+def newval(name, val, numformat, unit):
     with open(pickle_path, 'rb') as f:
         d = pickle.load(f)
-    d[name] = {'val': val, 'unit': unit}
+    d[name] = {'val': val, 'numformat': numformat, 'unit': unit}
     with open(pickle_path, 'wb') as f:
         pickle.dump(d, f)
+
+def getval(name, outdict=None):
+    with open(pickle_path, 'rb') as f:
+        d = pickle.load(f)
+    outdict = d[name].copy()
+    return outdict['val']
 
 def rmval(name):
     with open(pickle_path, 'rb') as f:
@@ -44,14 +50,20 @@ def regenerate_numericalvalues():
         + r'\usepackage{siunitx}'+'\n'+'\n'+'\n'
     for name, data in d.items():
         val = data['val']
+        numformat = data['numformat']
         unit = data['unit']
         res += r'\newcommand{\val'+name+r'}{\SI{'\
-               +val\
-               +r'}{'\
-               +unit\
-               +r'}}'+'\n'
+               + numformat.format(val)\
+               + r'}{'\
+               + unit\
+               + r'}}'+'\n'
     with open(sty_file_path, 'w') as f:
         f.write(res)
+
+def get_dict():
+    with open(pickle_path, 'rb') as f:
+        d = pickle.load(f)
+    return d
 
 
 if __name__ == "__main__":
