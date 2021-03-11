@@ -23,6 +23,7 @@ class Model:
         JE=None,
         files_and_pars=None,
         V=None,
+        spad_tts_distribution="Gamma",
         spad_tts=0.35,
         spad_mean=0.5,
         rms_size_dt_sec=0.1,
@@ -113,10 +114,11 @@ class Model:
         self.V = get_from_config("Vrf") if V is None else V
         self.spad_tts = spad_tts
         self.spad_mean = spad_mean
+        self.spad_tts_distribution = spad_tts_distribution
         self.rms_size_dt_sec = rms_size_dt_sec
         self.amp_period_corr_dt = amp_period_corr_dt
 
-    def simulate(self, load=False):
+    def simulate(self, load=None):
         calc_sim_df_several_files(self.rf_noise_std, self.files_and_pars,
                                   self.V, load)
         return self.files_and_pars
@@ -127,7 +129,8 @@ class Model:
                                     mean_spad=self.spad_mean,
                                     verbose=verbose,
                                     rms_size_dt_sec=self.rms_size_dt_sec,
-                                    amp_period_corr_dt_sec=self.amp_period_corr_dt)
+                                    amp_period_corr_dt_sec=self.amp_period_corr_dt,
+                                    distribution=self.spad_tts_distribution)
         return self.files_and_pars
     
     def get_meas_sim_comparison(self, feature, nbins=20,
@@ -141,13 +144,51 @@ class Model:
                                 dt=self.rms_size_dt_sec,
                                 ax=ax)
     
+
+    def get_meas_sim_amp_period_corr(self, ax=None):
+        meas = {"amps":[], "pers":[]}
+        sim = {"amps":[], "pers":[]}
+        for f in self.files_and_pars:
+            meas['amps'].append(
+                f['meas_amp_period_corr_df']['amp_ns'].values)
+            meas['pers'].append(
+                f['meas_amp_period_corr_df']['sync_period_sec'].values)
+            sim['amps'].append(
+                f['sim_amp_period_corr_df']['amp_ns'].values)
+            sim['pers'].append(
+                f['sim_amp_period_corr_df']['sync_period_sec'].values)
+        for d in [meas, sim]:
+            for key, val in d.items():
+                d[key] = np.concatenate(val)
+        meas = pd.DataFrame(meas)
+        sim = pd.DataFrame(sim)
+        if ax:
+            ax.plot(meas['amps'], 1e3*meas['pers'], '.',
+                    color='blue', label='Measurement')
+            ax.plot(sim['amps'], 1e3*sim['pers'], '.', color='red', label='Simulation')
+            ax.set_ylabel("Sync. motion period (ms)")
+            ax.set_xlabel("Amplitude (ns)")
+            ax.legend()
+        return {"meas": meas, "sim": sim}
+        
+
+
     def plot_meas_sim_amp_period_corr(self, ax=None):
+        """Legacy code, use "get_meas_sim_amp_period_corr" instead.
+
+        Args:
+            ax ([type], optional): [description]. Defaults to None.
+        """
         if ax is None:
             fig, ax = plt.subplots()
         leg_done = False
         for f in self.files_and_pars:
-            corr_dfs = [f['meas_amp_period_corr_df'], f['sim_amp_period_corr_df']]
-            for df, col, lab in zip(corr_dfs, ["blue", "red"], ["Measurement", "Simulation"]):
+            corr_dfs = [
+                            f['meas_amp_period_corr_df'],
+                            f['sim_amp_period_corr_df']
+                       ]
+            for df, col, lab in zip(corr_dfs, ["blue", "red"],
+                                    ["Measurement", "Simulation"]):
                 ax.plot(df['amp_ns'], 1e3*df['sync_period_sec'], '.', color=col,
                         label=None if leg_done else lab)
             leg_done = True
@@ -157,10 +198,10 @@ class Model:
 
 
 def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
-                rand_seed_int=1, V=None, load=False):
+                rand_seed_int=1, V=None, load=None):
     meas_df = pst.get_revolution_delay_df_one_gate(shift, file)
-    if load:
-        sim_df = pd.read_pickle(os.path.join(PathAssistant(shift).get_shift_cache_folder_path(), file.replace(".ptu", "_sim.pkl")))
+    if load is not None:
+        sim_df = pd.read_pickle(os.path.join(PathAssistant(shift).get_shift_cache_folder_path(), file.replace(".ptu", f"_{load}_sim.pkl")))
     else:
         gamma = get_from_config("gamma")
         alpha = get_from_config("ring_alpha")
@@ -190,7 +231,8 @@ def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
 
 
 def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
-                           show_spad_tt_dist=False, np_rand_seed=None):
+                           show_spad_tt_dist=False, np_rand_seed=None,
+                           distribution="Gamma"):
     """Adds random delays to the delays (photon arrival times) in sim_df. The added delays are drawn from a Gamma distribtuion with mean=spad_mean and std=spad_tts
 
     Args:
@@ -209,7 +251,12 @@ def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
     std_spad = spad_tts
     theta_spad = std_spad**2/mean_spad
     k_spad = mean_spad/theta_spad
-    ts_spad = np.random.gamma(k_spad, theta_spad, size=len(sim_df.index))
+    if distribution == "Gamma":
+        ts_spad = np.random.gamma(k_spad, theta_spad, size=len(sim_df.index))
+    elif distribution == "Gaussian":
+        ts_spad = np.random.normal(mean_spad, spad_tts, size=len(sim_df.index))
+    else:
+        raise ValueError("Unknown spad tts distribution type. Choose from Gamma and Gaussian")
     if show_spad_tt_dist:
         fig, ax = plt.subplots(figsize=(15, 4))
         ax.hist(ts_spad, bins=100, density=True)
@@ -218,7 +265,7 @@ def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
     return sim_df
 
 
-def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None, load=False):
+def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None, load=None):
     """[summary]
 
     Args:
@@ -292,11 +339,13 @@ def add_spad_tts_do_fitting_and_binning(files_and_pars,
                            mean_spad=0.5,
                            verbose=False,
                            rms_size_dt_sec=0.1,
-                           amp_period_corr_dt_sec=0.025):
+                           amp_period_corr_dt_sec=0.025,
+                           distribution="Gamma"):
     for el in files_and_pars:
         el['sim_df'] = add_spad_tts_to_sim_df(
             el['sim_df_before_spad'], spad_tts, mean_spad,
-            np_rand_seed=el['spad_tts_rand_seed'])
+            np_rand_seed=el['spad_tts_rand_seed'],
+            distribution=distribution)
     for i, el in enumerate(files_and_pars):
         if verbose:
             print(f"working on file number {i+1} out of {len(files_and_pars)}")
