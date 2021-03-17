@@ -5,6 +5,8 @@ data_folder = get_from_config("data_folder")
 # '/mnt/c/Users/lobac_000/OneDrive - Fermi National Accelerator Laboratory/URSSE'
 shifts_folder = os.path.join(data_folder, 'shifts')
 shift_folders = os.listdir(shifts_folder)
+plot_style_sheets_path = os.path.join(
+    get_from_config("repo_dir"), "plot_style_sheets")
 
 
 def show_shift_folders():
@@ -76,3 +78,7 @@ class PathAssistant():
 
     def get_acnet_data_dir(self):
         return WorkingDirectory(self.acnet_data_dir)
+
+
+def get_plot_style_sheet(name):
+    return os.path.join(plot_style_sheets_path, name+".mplstyle")
