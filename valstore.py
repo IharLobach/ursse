@@ -17,10 +17,11 @@ def initialize():
     with open(pickle_path, 'wb') as f:
         pickle.dump({}, f)
 
-def newval(name, val, numformat, unit):
+def newval(name, val, numformat, unit, changedfrom=None):
     with open(pickle_path, 'rb') as f:
         d = pickle.load(f)
-    d[name] = {'val': val, 'numformat': numformat, 'unit': unit}
+    d[name] = {'val': val, 'numformat': numformat, 'unit': unit,
+               'changedfrom': changedfrom}
     with open(pickle_path, 'wb') as f:
         pickle.dump(d, f)
 
