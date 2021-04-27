@@ -8,6 +8,7 @@ from ursse.path_assistant import PathAssistant
 import os
 from scipy.stats import chisquare
 
+
 class Model:
     def __init__(
         self,
@@ -27,7 +28,8 @@ class Model:
         spad_tts=0.35,
         spad_mean=0.5,
         rms_size_dt_sec=0.1,
-        amp_period_corr_dt=0.025
+        amp_period_corr_dt=0.025,
+        gate=(61000, 66000)
         ):
         self.rf_noise_std = rf_noise_std
         if gamma is None:
@@ -117,10 +119,11 @@ class Model:
         self.spad_tts_distribution = spad_tts_distribution
         self.rms_size_dt_sec = rms_size_dt_sec
         self.amp_period_corr_dt = amp_period_corr_dt
+        self.gate = gate
 
     def simulate(self, load=None):
         calc_sim_df_several_files(self.rf_noise_std, self.files_and_pars,
-                                  self.V, load)
+                                  self.V, load, self.gate)
         return self.files_and_pars
     
     def add_spad_tts_do_fitting_and_binning(self, verbose=False):
@@ -198,8 +201,8 @@ class Model:
 
 
 def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
-                rand_seed_int=1, V=None, load=None):
-    meas_df = pst.get_revolution_delay_df_one_gate(shift, file)
+                         rand_seed_int=1, V=None, load=None, gate=(61000, 66000)):
+    meas_df = pst.get_revolution_delay_df_one_gate(shift, file, gate=gate)
     if load is not None:
         sim_df = pd.read_pickle(os.path.join(PathAssistant(shift).get_shift_cache_folder_path(), file.replace(".ptu", f"_{load}_sim.pkl")))
     else:
@@ -265,7 +268,7 @@ def add_spad_tts_to_sim_df(sim_df, spad_tts=0.35, mean_spad=0.5,
     return sim_df
 
 
-def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None, load=None):
+def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None, load=None, gate=(61000, 66000)):
     """[summary]
 
     Args:
@@ -329,7 +332,8 @@ def calc_sim_df_several_files(rf_noise_std, files_and_pars=None, V=None, load=No
                                             el['delta0'],
                                             el['rand_seed_int'],
                                             V,
-                                            load)
+                                            load,
+                                            gate)
         el['sim_df'] = el['sim_df_before_spad'].copy()
     return files_and_pars
 

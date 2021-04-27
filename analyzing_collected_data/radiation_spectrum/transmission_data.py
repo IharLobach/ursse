@@ -22,15 +22,28 @@ lens = interp1d(lens_df.iloc[:, 0]/1000, lens_df.iloc[:, 1]/100,
                 bounds_error=False,
                 fill_value=(0, 0))
 
+def edgepass_func(file_name):
+    xl_file = pd.read_excel(path.join(transmission_directory, file_name))
+    wavelength_data = xl_file.iloc[1:, 0]/1000
+    transmission_data = xl_file.iloc[1:, 1]/100
+    return interp1d(wavelength_data, transmission_data, kind='cubic',
+                  bounds_error=False,
+                  fill_value=(0, 0))
+    
+
 xl_file = pd.read_excel(path.join(transmission_directory, 'FEL0500.xlsx'))
 wavelength_data = xl_file.iloc[1:, 0]/1000
 transmission_data = xl_file.iloc[1:, 1]/100
-longpass = interp1d(wavelength_data, transmission_data, kind='cubic')
+longpass = interp1d(wavelength_data, transmission_data, kind='cubic',
+                  bounds_error=False,
+                  fill_value=(0, 0))
 
 xl_file = pd.read_excel(path.join(transmission_directory, 'FES0800.xlsx'))
 wavelength_data = xl_file['Wavelength (nm)']/1000
 transmission_data = xl_file['% Transmission']/100
-shortpass = interp1d(wavelength_data, transmission_data, kind='cubic')
+shortpass = interp1d(wavelength_data, transmission_data, kind='cubic',
+                  bounds_error=False,
+                  fill_value=(0, 0))
 
 mirrors_file = os.path.join(transmission_directory, "mirror.csv")
 mirrors_df = pd.read_csv(mirrors_file)

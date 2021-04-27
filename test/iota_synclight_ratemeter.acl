@@ -1,0 +1,159 @@
+################################################################################
+#+title
+# iota_synclight_ratemeter.acl
+#-title
+################################################################################
+#+description
+# Calculate event rates from IOTA synchrotron-light counters
+#-description
+################################################################################
+#+author
+# Giulio Stancari
+#-author
+################################################################################
+#+keeper
+# Giulio Stancari
+#-keeper
+################################################################################
+#+version/date
+# v8 03-MAR-2020 Use current readings instad of logged data
+# v7 03-MAR-2020 Shortened log time (1 s) and wait time (100 ms)
+# v6 02-MAR-2020 Added M4R SPAD detector rate
+# v5 28-FEB-2020 Use number of read values to check for valid data and time stamps.
+#                Zero devices on exit.
+# v4 26-FEB-2020 Declare all variables. Allow array downsizing.
+# v3 24-FEB-2020 Added error handling, including lock check
+# v2 24-FEB-2020 Add bits 1-32 and 33-48. Renormalize with reference frequency.
+# v1 17-FEB-2020
+#-version
+################################################################################
+# multiplier for bits 33-48, 2^32
+declare mu32 double = 4294967296.0
+# reference 3-MHz frequency for calibration
+declare r3mhz double = 3.009259259259e6
+# set up custom error handling, including lock check
+declare myErrMax integer = 2
+declare myErrCount integer = 0
+declare myErrLast integer = 0
+declare e string
+on_error herr
+declare myLockName string = 'iota_synclight_ratemeter'
+lock myLockName
+enable settings
+loop forever
+# get current time and read devices
+declare ti double
+declare vlo double
+declare vhi double
+declare va double[11]
+declare ta double[11]
+declare vb double[11]
+declare tb double[11]
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT00
+read/nodisplay/values=vhi N:ISRCNT00[1]
+va[0] = vlo + vhi * mu32
+ta[0] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT01
+read/nodisplay/values=vhi N:ISRCNT01[1]
+va[1] = vlo + vhi * mu32
+ta[1] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT02
+read/nodisplay/values=vhi N:ISRCNT02[1]
+va[2] = vlo + vhi * mu32
+ta[2] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT03
+read/nodisplay/values=vhi N:ISRCNT03[1]
+va[3] = vlo + vhi * mu32
+ta[3] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT04
+read/nodisplay/values=vhi N:ISRCNT04[1]
+va[4] = vlo + vhi * mu32
+ta[4] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT08
+read/nodisplay/values=vhi N:ISRCNT08[1]
+va[8] = vlo + vhi * mu32
+ta[8] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT10
+read/nodisplay/values=vhi N:ISRCNT10[1]
+va[10] = vlo + vhi * mu32
+ta[10] = ti
+# wait for a given interval
+wait/milliseconds 2000
+# get current time and read devices again
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT00
+read/nodisplay/values=vhi N:ISRCNT00[1]
+vb[0] = vlo + vhi * mu32
+tb[0] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT01
+read/nodisplay/values=vhi N:ISRCNT01[1]
+vb[1] = vlo + vhi * mu32
+tb[1] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT02
+read/nodisplay/values=vhi N:ISRCNT02[1]
+vb[2] = vlo + vhi * mu32
+tb[2] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT03
+read/nodisplay/values=vhi N:ISRCNT03[1]
+vb[3] = vlo + vhi * mu32
+tb[3] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT04
+read/nodisplay/values=vhi N:ISRCNT04[1]
+vb[4] = vlo + vhi * mu32
+tb[4] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT08
+read/nodisplay/values=vhi N:ISRCNT08[1]
+vb[8] = vlo + vhi * mu32
+tb[8] = ti
+read/nodisplay/values=vlo/timestamp=ti N:ISRCNT10
+read/nodisplay/values=vhi N:ISRCNT10[1]
+vb[10] = vlo + vhi * mu32
+tb[10] = ti
+# calculate rates and update devices
+declare r double
+r = (vb[0]-va[0])/(tb[0]-ta[0])*1e3
+set N:ITR3MH r
+r = (vb[1]-va[1])/(tb[1]-ta[1])*1e3
+set N:ITR2LR r
+r = (vb[2]-va[2])/(tb[2]-ta[2])*1e3
+set N:ITR2LC r
+r = (vb[3]-va[3])/(tb[3]-ta[3])*1e3
+set N:ITR3LC r
+r = (vb[4]-va[4])/(tb[4]-ta[4])*1e3
+set N:ITR3LR r
+r = (vb[8]-va[8])/(tb[8]-ta[8])*1e3
+set N:ITP4RC r
+r = (vb[10]-va[10])/(tb[10]-ta[10])*1e3
+set N:ITP4RC[1] r
+endLoop
+exit
+# error handling
+herr:
+	if ($_error_status = LOCK_OTHER)
+		print 'Already locked... Exiting.'
+		exit
+	endif
+	if ($_error_line eq myErrLast)
+		myErrCount++
+	else
+		myErrLast = $_error_line
+		myErrCount = 0
+	endif
+	e = sprintf('%s on line %s (%s)', $_error_status, $_error_line, $_error_source_text)
+	print/stdout e	
+	if ((myErrCount > myErrMax) and (myErrMax > 0))
+		print/stdout 'Last error: ' e
+		exit/error_status
+	endif
+	wait/sec 1
+	myErrCount = 0
+	print
+	retry
+always:
+  # reset devices to 0
+  set N:ITR3MH 0.0
+  set N:ITR2LR 0.0
+  set N:ITR2LC 0.0
+  set N:ITR3LC 0.0
+  set N:ITR3LR 0.0
+  set N:ITP4RC 0.0
+  set N:ITP4RC[1] 0.0
