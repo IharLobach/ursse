@@ -63,7 +63,8 @@ def read_event_delays(file_path):
         df = df.iloc[:-1, :]
         return df, n_revolutions
     else:
-        return save_event_delays(file_path)
+        raise ValueError('File does not exist')
+        #return save_event_delays(file_path)
 
 
 def plot_arrival_time_hist(t_delays, gate=None, bins=None,

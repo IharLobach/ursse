@@ -79,6 +79,16 @@ class PathAssistant():
     def get_acnet_data_dir(self):
         return WorkingDirectory(self.acnet_data_dir)
 
+    def generate_csv_cache(self, time_stamp_file_name):
+        prog_path = os.path.join(get_from_config("repo_dir"), "ursse_cpp",      "hydra_harp", "hydra_harp_reader")
+        ptu_file_path = self.get_time_stamp_file_path(time_stamp_file_name)
+        output_file_path = \
+        os.path.join(self.time_stamp_files_folder_path, "cache", time_stamp_file_name[:-3]+"csv")
+        process = os.popen(f'{prog_path} "{ptu_file_path}" "{output_file_path}"')
+        preprocessed = process.read()
+        process.close()
+        return preprocessed
+
 
 def get_plot_style_sheet(name):
     return os.path.join(plot_style_sheets_path, name+".mplstyle")
