@@ -1,6 +1,8 @@
 import os
 import sys
 from config_ursse import get_from_config
+import pandas as pd
+
 data_folder = get_from_config("data_folder")
 # '/mnt/c/Users/lobac_000/OneDrive - Fermi National Accelerator Laboratory/URSSE'
 shifts_folder = os.path.join(data_folder, 'shifts')
@@ -88,6 +90,16 @@ class PathAssistant():
         preprocessed = process.read()
         process.close()
         return preprocessed
+    
+    def generate_single_channel_cache_pickle(self, time_stamp_file_name, channel=2):
+        self.generate_csv_cache(time_stamp_file_name)
+        output_file_path = \
+        os.path.join(self.time_stamp_files_folder_path, "cache", time_stamp_file_name[:-3]+"csv")
+        df = pd.read_csv(output_file_path)
+        df = df[df['channel']==channel].loc[:,['revolution', 'delay']].reset_index(drop=True)
+        df.to_pickle(output_file_path[:-3]+"pkl")
+        os.system('rm '+output_file_path)
+
 
 
 def get_plot_style_sheet(name):
