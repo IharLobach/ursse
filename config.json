@@ -1,0 +1,31 @@
+{
+    "data_folder": [
+        "/Users/ilobach/OneDrive - Fermi National Accelerator Laboratory/URSSE","/mnt/c/Users/lobac_000/OneDrive - Fermi National Accelerator Laboratory/URSSE",
+        "/mnt/c/Users/ilobach/OneDrive - Fermi National Accelerator Laboratory/URSSE"],
+    "IOTA_revolution_period": 1.3333333333333334e-07,
+    "dt": 1e-12,
+    "e": 1.602176634e-19,
+    "Undulator_Gap_mm": 38.15,
+    "K_peak": 1.0,
+    "Undulator_period_m": 0.055,
+    "gamma": 188.649706458,
+    "me_MeV": 0.511,
+    "hc_um_eV": 1.2398418758048764,
+    "c_m/s": 299792458,
+    "me_kg": 9.10938356e-31,
+    "z_obs_m": 3.5,
+    "Qs": 0.00042158516020236085,
+    "ring_alpha": 0.07086,
+    "RF_q": 4,
+    "damping_partition_JE": 2.6439952723495805,
+    "dipole_rho_m": 0.7,
+    "Vrf": 380,
+    "URSSE_sync_motion_note_dir": [
+        "/Users/ilobach/URSSE_sync_motion_note",
+        "/home/ilobach/URSSE_sync_motion_note"],
+    "repo_dir": [
+        "/Users/ilobach/ursse",
+        "/home/ilobach/ursse"],
+    "M": 2.921177714516208,
+    "Et": 10.91643937761682
+}
