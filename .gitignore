@@ -1,6 +1,5 @@
 **/__pycache__
 .vscode/
-config.json
 env/
 .ipynb_checkpoints
 nbconvert
