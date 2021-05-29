@@ -100,7 +100,7 @@ class PathAssistant():
         df = pd.read_csv(output_file_path)
         df = df[df['channel']==channel].loc[:,['revolution', 'delay']].reset_index(drop=True)
         df.to_pickle(output_file_path[:-3]+"pkl")
-        os.system('rm '+output_file_path)
+        os.remove(output_file_path)
 
 
 
