@@ -1,15 +1,18 @@
-from config_ursse import get_from_config
+from config_ursse import get_from_config, get_path_from_config
 import pickle
 import os
 
-repo_dir = get_from_config("repo_dir")
+
+repo_dir = get_path_from_config("repo_dir")
 
 pickle_path = os.path.join(
     repo_dir,
     "analyzing_collected_data/for_sync_motion_note/numericalvalues.pkl")
 
+ursse_sync_motion_note_dir = get_path_from_config("URSSE_sync_motion_note_dir")
+
 sty_file_path = os.path.join(
-    get_from_config("URSSE_sync_motion_note_dir"), "numericalvalues.sty")
+    ursse_sync_motion_note_dir, "numericalvalues.sty")
 
 def initialize():
     if os.path.exists(pickle_path):

@@ -1,14 +1,15 @@
 import os
 import sys
-from config_ursse import get_from_config
+from config_ursse import get_from_config, get_path_from_config
 import pandas as pd
 
-data_folder = get_from_config("data_folder")
-# '/mnt/c/Users/lobac_000/OneDrive - Fermi National Accelerator Laboratory/URSSE'
+data_folder = get_path_from_config("data_folder")
+
 shifts_folder = os.path.join(data_folder, 'shifts')
 shift_folders = os.listdir(shifts_folder)
+repo_dir = get_path_from_config("repo_dir")
 plot_style_sheets_path = os.path.join(
-    get_from_config("repo_dir"), "plot_style_sheets")
+    repo_dir, "plot_style_sheets")
 
 
 def show_shift_folders():
@@ -82,7 +83,8 @@ class PathAssistant():
         return WorkingDirectory(self.acnet_data_dir)
 
     def generate_csv_cache(self, time_stamp_file_name):
-        prog_path = os.path.join(get_from_config("repo_dir"), "ursse_cpp",      "hydra_harp", "hydra_harp_reader")
+        repo_dir = get_path_from_config("repo_dir")
+        prog_path = os.path.join(repo_dir, "ursse_cpp",      "hydra_harp", "hydra_harp_reader")
         ptu_file_path = self.get_time_stamp_file_path(time_stamp_file_name)
         output_file_path = \
         os.path.join(self.time_stamp_files_folder_path, "cache", time_stamp_file_name[:-3]+"csv")

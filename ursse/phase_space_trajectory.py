@@ -1,18 +1,18 @@
-import ursse_cpp.sync_motion_sim as sm
+
 from config_ursse import get_from_config
 import ursse.path_assistant as pa
 import os
 import sys
-from ursse.hydra_harp_file_reader import HydraHarpFile
-from ursse.LED_tests.data_analyzis import calc_Fano, get_time_window_hist, calc_Fano_from_counts_per_time_window
+
+
 import numpy as np
 import pandas as pd
-import seaborn as sns
+
 from ursse.data_processing import \
     get_event_delays, plot_arrival_time_hist, get_events_array, get_fanos, \
     plot_fanos_hist, process_file, read_event_delays, save_event_delays
 import matplotlib.pyplot as plt
-import seaborn as sns
+
 iota_period_sec = get_from_config("IOTA_revolution_period")
 dt_sec = get_from_config("dt")
 iota_period_au = iota_period_sec/dt_sec
@@ -22,7 +22,7 @@ plt.rcParams['figure.figsize'] = [15, 3.75]
 plt.rcParams.update({'font.size': 16, 'legend.fontsize': 16})
 from scipy.optimize import curve_fit
 import scipy.interpolate
-from scipy import stats
+
 iota_period_sec = get_from_config("IOTA_revolution_period")
 
 

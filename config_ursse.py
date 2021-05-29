@@ -12,6 +12,13 @@ def get_from_config(name):
     return val
 
 
+def get_path_from_config(name):
+    paths = get_from_config(name)
+    for p in paths:
+        if os.path.exists(p):
+            return p
+
+
 def get_all_config():
     with open(config_path) as f:
         return json.load(f)
