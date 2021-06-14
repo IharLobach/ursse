@@ -21,8 +21,8 @@
     "dipole_rho_m": 0.7,
     "Vrf": 380,
     "URSSE_sync_motion_note_dir": [
-        "/Users/ilobach/URSSE_sync_motion_note",
-        "/home/ilobach/URSSE_sync_motion_note"],
+        "/Users/ilobach/dissertation",
+        "/home/ilobach/dissertation"],
     "repo_dir": [
         "/Users/ilobach/ursse",
         "/home/ilobach/ursse"],

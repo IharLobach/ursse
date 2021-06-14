@@ -8,7 +8,7 @@ ring_alpha = get("ring_alpha")
 
 
 
-vt.newval("Vrf", get("Vrf"), '{:.0f}', "V")
+vt.newval("VrfUrsse", get("Vrf"), '{:.0f}', "V")
 vt.newval("gamma", gamma, '{:.1f}', "")
 vt.newval("Ezero", gamma*me, '{:.1f}', "MeV")
 vt.newval("alphac", ring_alpha, '{:.5f}', "")

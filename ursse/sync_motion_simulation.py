@@ -113,7 +113,7 @@ class Model:
                 ]
         else:
             self.files_and_pars = files_and_pars
-        self.V = get_from_config("Vrf") if V is None else V
+        self.V = get_from_config("VrfUrsse") if V is None else V
         self.spad_tts = spad_tts
         self.spad_mean = spad_mean
         self.spad_tts_distribution = spad_tts_distribution
@@ -209,7 +209,7 @@ def calc_sim_df_one_file(shift, file, rf_noise_std, tau0=None, delta0=None,
         gamma = get_from_config("gamma")
         alpha = get_from_config("ring_alpha")
         if V is None:
-            V = get_from_config("Vrf")
+            V = get_from_config("VrfUrsse")
         f = 1/get_from_config("IOTA_revolution_period")
         h = get_from_config("RF_q")
         k = get_from_config("M")
