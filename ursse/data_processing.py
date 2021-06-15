@@ -1,11 +1,16 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from pandas.io import pickle
 import seaborn as sns
 import os
 from ursse.hydra_harp_file_reader import HydraHarpFile
 from ursse.LED_tests.data_analyzis import \
  calc_Fano, get_time_window_hist, calc_Fano_from_counts_per_time_window
+from config_ursse import get_from_config
+iota_period_sec = get_from_config("IOTA_revolution_period")
+from scipy.stats import norm
+
 
 
 def get_event_delays(f, channel=1):
@@ -174,3 +179,101 @@ def process_file(file_name, gate=(60000, 70000), n_of_chunks=50,
     if print_output:
         plot_fanos_hist(fanos, report, bins=bins_fano)
     return fanos, report
+
+
+def load_one_pickle(pickle_path, gate1=(17500, 22500), gate2=(57000, 62000), spad1_channel=2, spad2_channel=3, dt_for_cutoff=2, dt_for_p=0.1):
+    df0 = pd.read_pickle(pickle_path)
+    total_iota_revolutions0 = df0.iloc[-1]['revolution']
+    total_time0 = total_iota_revolutions0 * iota_period_sec
+
+    # finding cutoff (where an electron is lost)
+    n_per = dt_for_cutoff/iota_period_sec
+    rev = df0['revolution']
+    grouped = rev.groupby((rev/n_per).astype(int))
+    av_rate = grouped.apply(lambda x: len(x.index)/(x.max()-x.min()))
+    av_rev = grouped.apply(np.mean)
+    av_rate0 = av_rate[0]
+
+
+    if (av_rate.iloc[-1] > 0.75 * av_rate0):
+        df = df0
+    else:
+        cutoff = (av_rev[av_rate > 0.75 * av_rate0]).iloc[-2]
+        df = df0[df0['revolution'] < cutoff]
+
+    # end finding cutoff
+
+
+
+
+    total_iota_revolutions = df.iloc[-1]['revolution']
+    df1_ = df[df['delay'].between(*gate1)].reset_index(drop=True)
+    df2_ = df[df['delay'].between(*gate2)].reset_index(drop=True)
+    df1 = df1_[df1_['channel'] == spad1_channel].drop(columns=['channel'])
+    df2 = df2_[df2_['channel'] == spad2_channel].drop(columns=['channel'])
+    total_iota_revolutions = df.iloc[-1]['revolution']
+    total_time = total_iota_revolutions * iota_period_sec
+    spad1_events = len(df1.index)
+    rate1 = spad1_events/total_time
+    spad2_events = len(df2.index)
+    rate2 = spad2_events/total_time
+    num_rev_above_one1 = np.sum(df1['revolution'].value_counts() > 1)
+    num_rev_above_one2 = np.sum(df2['revolution'].value_counts() > 1)
+    clean_df = df[(df['delay'].between(*gate1) & (df['channel'] == spad1_channel))
+                  | (df['delay'].between(*gate2) & (df['channel'] == spad2_channel))]
+    coincidence_events = np.sum(clean_df['revolution'].value_counts() == 2)
+    coincidence_count_rate = coincidence_events/total_time
+    p1 = spad1_events/total_iota_revolutions
+    p2 = spad2_events/total_iota_revolutions
+    p12_meas = coincidence_events/total_iota_revolutions
+
+    # for p as a function of t
+    n_per = dt_for_p/iota_period_sec
+    p_dfs = []
+    for df0 in [df1, df2]:
+        rev = df0['revolution']
+        grouped = rev.groupby((rev/n_per).astype(int))
+        counts = grouped.apply(lambda x: len(x.index))
+        times = dt_for_p * np.arange(len(counts.index))
+        p_dfs.append(pd.DataFrame({'time_sec': times, 'counts': counts}))
+
+
+    fig, ax = plt.subplots(figsize=(15, 5))
+    ax.plot(p_dfs[0]['time_sec'], p_dfs[0]['counts']/dt_for_p,
+        label='SPAD1')
+    ax.plot(p_dfs[1]['time_sec'], p_dfs[1]['counts']/dt_for_p,
+        label='SPAD2')
+    ax.set_ylim(0, ax.get_ylim()[1])
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Count rate')
+    ax.axvline(total_time, label='Auto data cutoff')
+    ax.legend()
+    plt.show()
+
+    # hypothesis testing
+    mu = np.sum(p_dfs[0]['counts'] * p_dfs[1]['counts']) / n_per
+    sigma = np.sqrt(mu - np.sum((p_dfs[0]['counts'] * p_dfs[1]['counts'])**2)/n_per**3)
+
+    Pvalue = 2 * norm.cdf(-np.abs(coincidence_events - mu), 0, sigma)
+
+    return {
+        "file_name": os.path.basename(pickle_path),
+        "df": [df1, df2],
+        "clean_df": clean_df,
+        "p_df": p_dfs,
+        "total_iota_revolutions0": total_iota_revolutions0,
+        "total_time0": total_time0,
+        "total_iota_revolutions": total_iota_revolutions,
+        "total_time": total_time,
+        "total_events": [spad1_events, spad2_events],
+        "count_rate": [rate1, rate2],
+        "num_rev_above_one": [num_rev_above_one1, num_rev_above_one2],
+        "coincidence_count_rate": coincidence_count_rate,
+        "p": [p1, p2],
+        "p12_meas": p12_meas,
+        "p1*p2": p1*p2,
+        "mu": mu,
+        "sigma": sigma,
+        "total_coincidence_events": coincidence_events,
+        "P-value": Pvalue
+    }

@@ -54,7 +54,8 @@ class PathAssistant():
         shift = self.time_stamp_files_folder_path
         files = [f for f in os.listdir(shift)
                  if os.path.isfile(os.path.join(shift, f))]
-        return [f for f in files if (f not in self.ignore_files)]
+        files1 = [f for f in files if (f not in self.ignore_files)]
+        return [f for f in files1 if ('.ptu' in f)]
 
     def show_time_stamp_file_names(self):
         files = self.get_shift_files()
@@ -82,6 +83,9 @@ class PathAssistant():
     def get_acnet_data_dir(self):
         return WorkingDirectory(self.acnet_data_dir)
 
+    def get_pickle_path(self, time_stamp_file_name):
+        return os.path.join(self.time_stamp_files_folder_path, "cache", time_stamp_file_name[:-3]+"pkl")
+
     def generate_csv_cache(self, time_stamp_file_name):
         repo_dir = get_path_from_config("repo_dir")
         prog_path = os.path.join(repo_dir, "ursse_cpp",      "hydra_harp", "hydra_harp_reader")
@@ -100,7 +104,7 @@ class PathAssistant():
         df = pd.read_csv(output_file_path)
         df = df[df['channel']==channel].loc[:,['revolution', 'delay']].reset_index(drop=True)
         df.to_pickle(output_file_path[:-3]+"pkl")
-        os.system('rm '+output_file_path)
+        os.remove(output_file_path)
 
 
 
