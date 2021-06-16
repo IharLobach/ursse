@@ -130,7 +130,8 @@ void GotPhoton(long long TimeTag, int Channel, int DTime)
 //  Markers: Bitfield of arrived Markers, different markers can arrive at same time (same record)
 void GotMarker(long long TimeTag, int Markers)
 {
-  fprintf(fpout,"%I64u MAR %2x %I64u\n", RecNum, Markers, TimeTag);
+  // fprintf(fpout,"%I64u MAR %2x %I64u\n", RecNum, Markers, TimeTag);
+  fprintf(fpout,"%I64u, 5, %I16u\n", revNum, TimeTag-prevtrigtime);
 }
 
 //Got Overflow
