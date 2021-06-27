@@ -144,20 +144,23 @@ def get_fanos(events, n_revolutions, n_of_chunks=50,
 
 def plot_fanos_hist(fanos, report=None, bins=None,
                     shift_folder_name=None,
-                    time_stamp_file_name=None):
-    ax = sns.distplot(fanos, kde=False, bins=bins)
-    ax.set_xlabel("F-1")
+                    time_stamp_file_name=None, ax=None):
+    if ax is None:
+        ax = sns.distplot(fanos, kde=False, bins=bins)
+    else:
+        sns.distplot(fanos, kde=False, bins=bins, ax=ax)
+    ax.set_xlabel("$F-1$")
     ax.set_ylabel("Occurences")
     ax.set_title("Sampling distribution of Fano factor")
     if report:
         fano_interval = report['fano_interval']
         perc = report['fano_interval_percentiles']
-        plt.axvline(fano_interval[0])
-        plt.axvline(fano_interval[1])
-        ax.text(0.95, 0.01, 'Vertical lines represent the percentiles ({:.3f}, {:.3f})'
+        plt.axvline(fano_interval[0], linewidth=3)
+        plt.axvline(fano_interval[1], linewidth=3)
+        ax.text(0.95, 0.01, 'Vertical lines represent the percentiles ({:.2f}, {:.2f})'
                 .format(perc[0], perc[1]),
                 verticalalignment='bottom', horizontalalignment='right',
-                transform=ax.transAxes, fontsize=15)
+                transform=ax.transAxes, fontsize=20)
     title = "Histogram for Fano factor.\n"
     if shift_folder_name:
         title += "Shift folder: {}. ".format(shift_folder_name)

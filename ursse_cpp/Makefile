@@ -1,17 +1,16 @@
-PYTHON_VERSION := 3.6
-PYTHON_INC := /usr/include/python$(PYTHON_VERSION)
-BOOST_INC := /usr/include/boost
-XTENSOR_INC := /home/ilobach/anaconda3/include
-BOOST_LIB_LOCATION := /usr/lib/x86_64-linux-gnu
-BOOST_LIB_FILE := boost_python3
-BOOST_LIB_NUMPY := boost_numpy3
+PYTHON_VERSION := 3.9
+PYTHON_INC := /opt/homebrew/Caskroom/miniforge/base/envs/env/include/python$(PYTHON_VERSION)
+BOOST_INC := /opt/homebrew/include/boost
+BOOST_LIB_LOCATION := /opt/homebrew/lib
+BOOST_LIB_FILE := boost_python39
+BOOST_LIB_NUMPY := boost_numpy39
 
 CC := gcc
 
 CFLAGS := -std=c++17 -c -fPIC
-CInc := -I$(BOOST_INC) -I$(PYTHON_INC) -I$(XTENSOR_INC)
+CInc := -I$(BOOST_INC) -I$(PYTHON_INC)
 
-CLinkFlags = -shared -Wl,-soname,$@ -Wl,-rpath,$(BOOST_LIB_LOCATION) -L$(BOOST_LIB_LOCATION) -l$(BOOST_LIB_FILE) -l$(BOOST_LIB_NUMPY)
+CLinkFlags = -shared -Wl,-install_name,$@ -Wl,-rpath,$(BOOST_LIB_LOCATION) -L$(BOOST_LIB_LOCATION) -l$(BOOST_LIB_FILE) -l$(BOOST_LIB_NUMPY)
 
 PHONY: all
 all: sync_motion_sim_cpp.so

@@ -1,0 +1,24 @@
+text.usetex: True
+font.size: 20
+xtick.labelsize: 20
+ytick.labelsize: 20
+legend.fontsize: 18
+axes.labelsize: 20
+axes.titlesize: 20
+lines.linewidth : 3
+lines.markersize : 10
+errorbar.capsize: 4
+# legend.borderpad:     0.0
+legend.labelspacing:  0.0
+legend.handlelength:  1.0
+# legend.handleheight:  0.7
+legend.handletextpad: 0.3
+# legend.borderaxespad: 0.1
+# legend.columnspacing: 2.0
+xtick.direction:     out 
+xtick.major.size:    10
+xtick.major.width:   2
+ytick.direction:     out
+ytick.major.size:    10
+ytick.major.width:   2
+axes.linewidth:     2

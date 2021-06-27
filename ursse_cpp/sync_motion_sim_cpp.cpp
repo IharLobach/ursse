@@ -51,7 +51,7 @@ np::ndarray RandomEnergyGammaDistribution(np::ndarray params)
     for(int i=0;i<size;i++){
         rand_res[i] = dist(generator);
     }
-    Py_intptr_t sh[1] = {rand_res.size()};
+    Py_intptr_t sh[1] = {static_cast<Py_intptr_t>(rand_res.size())};
     np::ndarray result = np::zeros(1, sh, np::dtype::get_builtin<double>());
     std::copy(rand_res.begin(), rand_res.end(), reinterpret_cast<double *>(result.get_data()));
     return result;
@@ -149,7 +149,7 @@ p::dict get_simulated_revolution_delay_data(np::ndarray params, np::ndarray revo
         p_prev = p_new;
     }
 
-    Py_intptr_t sh[1] = {phis.size()};
+    Py_intptr_t sh[1] = {static_cast<Py_intptr_t>(phis.size())};
     np::ndarray result_phis = np::zeros(1, sh, np::dtype::get_builtin<double>());
     std::copy(phis.begin(), phis.end(), reinterpret_cast<double *>(result_phis.get_data()));
     np::ndarray result_deltas = np::zeros(1, sh, np::dtype::get_builtin<double>());
