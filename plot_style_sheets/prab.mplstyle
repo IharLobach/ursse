@@ -1,0 +1,27 @@
+font.family: serif
+text.usetex: True
+pgf.rcfonts: False
+pgf.texsystem: xelatex
+font.size: 30
+xtick.labelsize: 32
+ytick.labelsize: 32
+legend.fontsize: 28
+axes.labelsize: 30
+axes.titlesize: 30
+lines.linewidth : 3
+lines.markersize : 10
+errorbar.capsize: 4
+legend.borderpad:     0.2
+legend.labelspacing:  0.2
+legend.handlelength:  1.0
+legend.handleheight:  0.7
+legend.handletextpad: 0.3
+legend.borderaxespad: 0.2
+legend.columnspacing: 2.0
+xtick.direction:     in 
+xtick.major.size:    7
+xtick.major.width:   3
+ytick.direction:     in 
+ytick.major.size:    7
+ytick.major.width:   3
+axes.linewidth:     2

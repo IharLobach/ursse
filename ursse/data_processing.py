@@ -157,10 +157,10 @@ def plot_fanos_hist(fanos, report=None, bins=None,
         perc = report['fano_interval_percentiles']
         plt.axvline(fano_interval[0], linewidth=3)
         plt.axvline(fano_interval[1], linewidth=3)
-        ax.text(0.95, 0.01, 'Vertical lines represent the percentiles ({:.2f}, {:.2f})'
+        ax.text(0.99, 0.03, 'Vertical lines represent\n' +'  the percentiles ({:.2f}, {:.2f})'
                 .format(perc[0], perc[1]),
                 verticalalignment='bottom', horizontalalignment='right',
-                transform=ax.transAxes, fontsize=20)
+                transform=ax.transAxes)
     title = "Histogram for Fano factor.\n"
     if shift_folder_name:
         title += "Shift folder: {}. ".format(shift_folder_name)
