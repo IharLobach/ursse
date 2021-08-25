@@ -86,16 +86,25 @@ class PathAssistant():
     def get_pickle_path(self, time_stamp_file_name):
         return os.path.join(self.time_stamp_files_folder_path, "cache", time_stamp_file_name[:-3]+"pkl")
 
-    def generate_csv_cache(self, time_stamp_file_name):
+    def generate_csv_cache(self, time_stamp_file_name, filetype='T2'):
         repo_dir = get_path_from_config("repo_dir")
-        prog_path = os.path.join(repo_dir, "ursse_cpp",      "hydra_harp", "hydra_harp_reader")
         ptu_file_path = self.get_time_stamp_file_path(time_stamp_file_name)
         output_file_path = \
-        os.path.join(self.time_stamp_files_folder_path, "cache", time_stamp_file_name[:-3]+"csv")
-        process = os.popen(f'{prog_path} "{ptu_file_path}" "{output_file_path}"')
-        preprocessed = process.read()
-        process.close()
-        return preprocessed
+        os.path.join(self.time_stamp_files_folder_path, "cache",    time_stamp_file_name[:-3]+"csv")
+        if filetype=='T2':
+            prog_path = os.path.join(repo_dir, "ursse_cpp",      "hydra_harp", "hydra_harp_reader")
+            process = os.popen(f'{prog_path} "{ptu_file_path}" "{output_file_path}"')
+            preprocessed = process.read()
+            process.close()
+            return preprocessed
+        elif filetype=='T3':
+            prog_path = os.path.join(repo_dir, "ursse", "hydra_harp_T3.py")
+            process = os.popen(f'python {prog_path} "{ptu_file_path}" "{output_file_path}"')
+            preprocessed = process.read()
+            process.close()
+            return preprocessed
+        else:
+            raise ValueError(f'Unknown filetype {filetype}')
     
     def generate_single_channel_cache_pickle(self, time_stamp_file_name, channel=2):
         self.generate_csv_cache(time_stamp_file_name)
