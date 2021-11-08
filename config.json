@@ -21,8 +21,8 @@
     "dipole_rho_m": 0.7,
     "Vrf": 380,
     "URSSE_sync_motion_note_dir": [
-        "/Users/ilobach/dissertation",
-        "/home/ilobach/dissertation"],
+        "/Users/ilobach/single-electron-JINST",
+        "/home/ilobach/single-electron-JINST"],
     "repo_dir": [
         "/Users/ilobach/ursse",
         "/home/ilobach/ursse"],
